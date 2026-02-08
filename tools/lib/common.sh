@@ -47,7 +47,7 @@ validate_env_var() {
     local var_name="$1"
     local description="${2:-Environment variable}"
     
-    if [ -z "${!var_name}" ]; then
+    if [ -z "${!var_name-}" ]; then
         log_error "$description ($var_name) not set"
         return 1
     fi
@@ -70,8 +70,30 @@ ensure_dir() {
 # Safe path handling - prevent directory traversal
 sanitize_path() {
     local path="$1"
-    # Remove .. and resolve to absolute path
-    realpath -m "$path" 2>/dev/null || echo "$path"
+    local base_dir="${2:-$WORKSPACE}"
+
+    # Resolve base directory to an absolute path
+    local resolved_base
+    resolved_base="$(realpath -m "$base_dir" 2>/dev/null)" || {
+        log_error "Failed to resolve base directory: $base_dir"
+        return 1
+    }
+
+    # Resolve the input path to an absolute path
+    local resolved_path
+    resolved_path="$(realpath -m "$path" 2>/dev/null)" || {
+        log_error "Failed to resolve path: $path"
+        return 1
+    }
+
+    # Ensure the resolved path is within the base directory
+    if [ "$resolved_path" != "$resolved_base" ] && [[ "$resolved_path" != "$resolved_base"/* ]]; then
+        log_error "Path escapes base directory: $resolved_path (base: $resolved_base)"
+        return 1
+    fi
+
+    echo "$resolved_path"
+    return 0
 }
 
 # API key validation

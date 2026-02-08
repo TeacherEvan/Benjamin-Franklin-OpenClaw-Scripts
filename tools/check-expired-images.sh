@@ -20,10 +20,10 @@ if [ ! -f "$METADATA_STORE" ]; then
 fi
 
 NOW=$(date +%s)
-EXPIRED_COUNT=0
 
-# Read metadata and check for expired entries
-jq -c '.[] | select(.expiry < '"$NOW"' and .reviewed == false)' "$METADATA_STORE" | while read -r entry; do
+# Read metadata and check for expired entries (use process substitution to preserve EXPIRED_COUNT)
+EXPIRED_COUNT=0
+while read -r entry; do
     EXPIRED_COUNT=$((EXPIRED_COUNT + 1))
     
     ID=$(echo "$entry" | jq -r '.id')
@@ -35,7 +35,7 @@ jq -c '.[] | select(.expiry < '"$NOW"' and .reviewed == false)' "$METADATA_STORE
     log_info "Summary: $SUMMARY"
     log_info "Created: $(date -d @$TIMESTAMP)"
     echo ""
-done
+done < <(jq -c '.[] | select(.expiry < '"$NOW"' and .reviewed == false)' "$METADATA_STORE")
 
 if [ "$EXPIRED_COUNT" -gt 0 ]; then
     log_info "Found $EXPIRED_COUNT expired image summaries"

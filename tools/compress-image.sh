@@ -15,7 +15,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 
-IMAGE_PATH="$1"
+IMAGE_PATH="${1:-}"
 
 # Validate inputs
 if [ -z "${IMAGE_PATH:-}" ]; then

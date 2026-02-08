@@ -31,7 +31,7 @@ Most scripts support the following environment variables:
 ### Memory Compression
 - **`memcompress-modular.js`** — Modular memory compression CLI (recommended)
   ```bash
-  node memcompress-modular.js
+  node tools/memcompress/memcompress-modular.js
   ```
 
 ### Image Management
@@ -68,7 +68,7 @@ Most scripts support the following environment variables:
 
 - **`transcribe.js`** — Advanced transcription using AssemblyAI
   ```bash
-  node transcribe.js <audio_file>
+  node tools/transcribe.js <audio_file>
   ```
   See file header for setup instructions.
 
