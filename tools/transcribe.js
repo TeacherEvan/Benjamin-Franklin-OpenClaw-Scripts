@@ -3,6 +3,10 @@
  * Voice Transcription Tool
  * Uses AssemblyAI API to transcribe audio files
  * 
+ * @module transcribe
+ * @requires fs
+ * @requires path
+ * 
  * Usage: node tools/transcribe.js <audio-file>
  * 
  * Setup:
@@ -18,9 +22,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
-// Get API key from config or env
+/**
+ * Get API key from config file or environment variable
+ * @returns {string|null} API key if found, null otherwise
+ */
 function getApiKey() {
   const homeDir = require('os').homedir();
   const configPath = path.join(homeDir, '.config', 'assemblyai', 'config.json');
@@ -43,23 +49,30 @@ function getApiKey() {
   return null;
 }
 
+/**
+ * Transcribe an audio file using AssemblyAI
+ * @param {string} audioFile - Path to audio file
+ * @returns {Promise<string>} Transcribed text
+ * @throws {Error} If transcription fails
+ */
 async function transcribe(audioFile) {
   const apiKey = getApiKey();
   
   if (!apiKey) {
-    console.error('❌ No API key found!');
-    console.error('\nSetup instructions:');
-    console.error('1. Sign up: https://www.assemblyai.com/dashboard/signup');
-    console.error('2. Get your API key from the dashboard');
-    console.error('3. Store it:');
-    console.error('   mkdir -p ~/.config/assemblyai');
-    console.error('   echo \'{"api_key": "YOUR_KEY"}\' > ~/.config/assemblyai/config.json');
-    process.exit(1);
+    const errorMsg = [
+      '❌ No API key found!',
+      '\nSetup instructions:',
+      '1. Sign up: https://www.assemblyai.com/dashboard/signup',
+      '2. Get your API key from the dashboard',
+      '3. Store it:',
+      '   mkdir -p ~/.config/assemblyai',
+      '   echo \'{"api_key": "YOUR_KEY"}\' > ~/.config/assemblyai/config.json'
+    ].join('\n');
+    throw new Error(errorMsg);
   }
   
   if (!audioFile || !fs.existsSync(audioFile)) {
-    console.error('❌ Audio file not found:', audioFile);
-    process.exit(1);
+    throw new Error(`Audio file not found: ${audioFile}`);
   }
   
   console.log('🎤 Transcribing:', path.basename(audioFile));
@@ -79,8 +92,7 @@ async function transcribe(audioFile) {
   
   const uploadData = await uploadResponse.json();
   if (!uploadResponse.ok || !uploadData.upload_url) {
-    console.error('❌ Upload failed:', uploadData);
-    process.exit(1);
+    throw new Error(`Upload failed: ${JSON.stringify(uploadData)}`);
   }
   
   console.log('✅ Upload complete');
@@ -101,8 +113,7 @@ async function transcribe(audioFile) {
   
   const transcriptData = await transcriptResponse.json();
   if (!transcriptResponse.ok || !transcriptData.id) {
-    console.error('❌ Transcription request failed:', transcriptData);
-    process.exit(1);
+    throw new Error(`Transcription request failed: ${JSON.stringify(transcriptData)}`);
   }
   
   const transcriptId = transcriptData.id;
@@ -123,8 +134,7 @@ async function transcribe(audioFile) {
     if (result.status === 'completed') {
       break;
     } else if (result.status === 'error') {
-      console.error('❌ Transcription failed:', result.error);
-      process.exit(1);
+      throw new Error(`Transcription failed: ${result.error}`);
     }
     
     process.stdout.write('.');

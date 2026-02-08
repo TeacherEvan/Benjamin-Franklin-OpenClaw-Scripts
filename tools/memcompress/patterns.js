@@ -1,6 +1,9 @@
 /**
  * Compression Patterns
- * Regex-based transformations for common phrases
+ * Regex-based transformations for common phrases and patterns
+ * 
+ * @module patterns
+ * @type {Array<{regex: RegExp, replace?: (string|Function), preserve?: boolean}>}
  */
 
 module.exports = [

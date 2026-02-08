@@ -1,17 +1,26 @@
 #!/bin/bash
 # Archive old memory files (>7 days) to memory/archive/YYYY-MM/
-# Usage: ./archive-memory.sh
+# Usage: ./archive-memory.sh [days_old]
+#
+# Arguments:
+#   days_old - Number of days before archiving (default: 7)
+#
+# Environment:
+#   OPENCLAW_WORKSPACE - Override default workspace path
 
-WORKSPACE="/home/ubuntu/.openclaw/clawd"
-MEMORY_DIR="$WORKSPACE/memory"
+set -euo pipefail
+
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 ARCHIVE_BASE="$MEMORY_DIR/archive"
-
-DAYS_OLD=7
+DAYS_OLD="${1:-7}"
 TODAY=$(date +%s)
 ARCHIVED_COUNT=0
 
-echo "📦 Memory Archive System"
-echo "Archive files older than $DAYS_OLD days"
+log_info "Memory Archive System"
+log_info "Archive files older than $DAYS_OLD days"
 echo ""
 
 # Find daily memory files
@@ -36,18 +45,20 @@ for file in "$MEMORY_DIR"/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].md; do
     archive_dir="$ARCHIVE_BASE/$year_month"
     
     # Create archive directory if needed
-    mkdir -p "$archive_dir"
+    ensure_dir "$archive_dir" || continue
     
     # Move file
     mv "$file" "$archive_dir/"
-    echo "✅ Archived: $filename ($age_days days old) → archive/$year_month/"
+    log_success "Archived: $filename ($age_days days old) → archive/$year_month/"
     ARCHIVED_COUNT=$((ARCHIVED_COUNT + 1))
   fi
 done
 
 echo ""
 if [ $ARCHIVED_COUNT -eq 0 ]; then
-  echo "ℹ️  No files to archive (all < $DAYS_OLD days old)"
+  log_info "No files to archive (all < $DAYS_OLD days old)"
 else
-  echo "📊 Archived $ARCHIVED_COUNT file(s)"
+  log_success "Archived $ARCHIVED_COUNT file(s)"
 fi
+
+exit 0

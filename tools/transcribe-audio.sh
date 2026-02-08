@@ -1,26 +1,33 @@
 #!/bin/bash
 # Transcribe audio using Gemini API
 # Usage: ./transcribe-audio.sh <audio_file>
+#
+# Arguments:
+#   audio_file - Path to audio file to transcribe
+#
+# Environment:
+#   GEMINI_API_KEY - Required API key for Gemini service
 
-set -e
+set -euo pipefail
 
-if [ -z "$1" ]; then
-    echo "Usage: $0 <audio_file>"
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+AUDIO_FILE="${1:-}"
+
+# Validate inputs
+if [ -z "$AUDIO_FILE" ]; then
+    log_error "Usage: $0 <audio_file>"
     exit 1
 fi
 
-AUDIO_FILE="$1"
-API_KEY="${GEMINI_API_KEY}"
+validate_file_exists "$AUDIO_FILE" "Audio file" || exit 1
+validate_env_var "GEMINI_API_KEY" "Gemini API key" || exit 1
+validate_api_key "$GEMINI_API_KEY" "Gemini" || exit 1
 
-if [ -z "$API_KEY" ]; then
-    echo "Error: GEMINI_API_KEY not set"
-    exit 1
-fi
-
-if [ ! -f "$AUDIO_FILE" ]; then
-    echo "Error: File not found: $AUDIO_FILE"
-    exit 1
-fi
+# Sanitize path
+AUDIO_FILE=$(sanitize_path "$AUDIO_FILE")
 
 # Convert audio to base64
 AUDIO_BASE64=$(base64 -w 0 "$AUDIO_FILE")
@@ -38,12 +45,12 @@ if [[ "$MIME_TYPE" == "audio/x-"* ]]; then
     fi
 fi
 
-echo "📝 Transcribing: $AUDIO_FILE" >&2
-echo "🎵 MIME type: $MIME_TYPE" >&2
+log_info "Transcribing: $AUDIO_FILE"
+log_info "MIME type: $MIME_TYPE"
 
 # Call Gemini API
 curl -s -X POST \
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}" \
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}" \
   -H 'Content-Type: application/json' \
   -d "{
     \"contents\": [{
@@ -58,3 +65,5 @@ curl -s -X POST \
       ]
     }]
   }" | jq -r '.candidates[0].content.parts[0].text // "Error: No transcription returned"'
+
+exit 0

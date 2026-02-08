@@ -1,13 +1,21 @@
 #!/bin/bash
 # Check expired image summaries and prompt for retention
 # Run this via cron or heartbeat
+#
+# Environment:
+#   OPENCLAW_WORKSPACE - Override default workspace path
 
-WORKSPACE="/home/ubuntu/.openclaw/clawd"
-IMAGE_STORE="$WORKSPACE/memory/images"
-METADATA_STORE="$IMAGE_STORE/metadata.json"
+set -euo pipefail
+
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
+# Ensure image store exists
+ensure_dir "$IMAGE_STORE" || exit 1
 
 if [ ! -f "$METADATA_STORE" ]; then
-    echo "No image metadata found"
+    log_info "No image metadata found"
     exit 0
 fi
 
@@ -23,13 +31,15 @@ jq -c '.[] | select(.expiry < '"$NOW"' and .reviewed == false)' "$METADATA_STORE
     SUMMARY=$(echo "$entry" | jq -r '.summary')
     TIMESTAMP=$(echo "$entry" | jq -r '.timestamp')
     
-    echo "🔔 Image summary expired: $FILENAME"
-    echo "📝 Summary: $SUMMARY"
-    echo "📅 Created: $(date -d @$TIMESTAMP)"
+    log_warning "Image summary expired: $FILENAME"
+    log_info "Summary: $SUMMARY"
+    log_info "Created: $(date -d @$TIMESTAMP)"
     echo ""
 done
 
 if [ "$EXPIRED_COUNT" -gt 0 ]; then
-    echo "Found $EXPIRED_COUNT expired image summaries"
-    echo "Review needed: Check $METADATA_STORE"
+    log_info "Found $EXPIRED_COUNT expired image summaries"
+    log_info "Review needed: Check $METADATA_STORE"
 fi
+
+exit 0

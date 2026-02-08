@@ -1,29 +1,40 @@
 #!/bin/bash
 # Image compression and auto-cleanup workflow
 # Usage: ./compress-image.sh <image_path>
+#
+# Arguments:
+#   image_path - Path to image file to compress
+#
+# Environment:
+#   OPENCLAW_WORKSPACE - Override default workspace path
+#   GEMINI_API_KEY - Required for image analysis
 
-set -e
+set -euo pipefail
+
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
 
 IMAGE_PATH="$1"
-WORKSPACE="/home/ubuntu/.openclaw/clawd"
-IMAGE_STORE="$WORKSPACE/memory/images"
-METADATA_STORE="$IMAGE_STORE/metadata.json"
 
-if [ -z "$IMAGE_PATH" ]; then
-    echo "Usage: $0 <image_path>"
+# Validate inputs
+if [ -z "${IMAGE_PATH:-}" ]; then
+    log_error "Usage: $0 <image_path>"
     exit 1
 fi
 
-if [ ! -f "$IMAGE_PATH" ]; then
-    echo "Error: Image not found: $IMAGE_PATH"
-    exit 1
-fi
+validate_file_exists "$IMAGE_PATH" "Image" || exit 1
+validate_env_var "GEMINI_API_KEY" "Gemini API key" || exit 1
+validate_api_key "$GEMINI_API_KEY" "Gemini" || exit 1
+
+# Sanitize path
+IMAGE_PATH=$(sanitize_path "$IMAGE_PATH")
 
 # Create image store if needed
-mkdir -p "$IMAGE_STORE"
+ensure_dir "$IMAGE_STORE" || exit 1
 
 # Generate summary using Gemini
-echo "📸 Analyzing image: $IMAGE_PATH" >&2
+log_info "Analyzing image: $IMAGE_PATH"
 
 # Convert image to base64
 IMAGE_BASE64=$(base64 -w 0 "$IMAGE_PATH")
@@ -81,7 +92,9 @@ jq --arg id "$IMAGE_ID" \
 # Delete original image
 rm "$IMAGE_PATH"
 
-echo "✅ Image compressed and deleted"
-echo "📝 Summary: $SUMMARY"
-echo "📅 Expiry: $(date -d @$EXPIRY)"
-echo "💾 Metadata: $METADATA_STORE"
+log_success "Image compressed and deleted"
+log_info "Summary: $SUMMARY"
+log_info "Expiry: $(date -d @$EXPIRY)"
+log_info "Metadata: $METADATA_STORE"
+
+exit 0

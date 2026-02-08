@@ -1,14 +1,41 @@
 #!/bin/bash
-# File Size Monitor - Detects files exceeding 250 lines
-# Usage: ./file-size-monitor.sh [--auto-split]
+# File Size Monitor - Detects files exceeding configurable line limit
+# Usage: ./file-size-monitor.sh [--auto-split] [limit]
+#
+# Arguments:
+#   --auto-split - Enable automatic split proposals (optional)
+#   limit - Line limit (default: 250)
+#
+# Environment:
+#   OPENCLAW_WORKSPACE - Override default workspace path
 
-WORKSPACE="/home/ubuntu/.openclaw/clawd"
+set -euo pipefail
+
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common.sh"
+
 LIMIT=250
 AUTO_SPLIT=false
 
-if [ "$1" = "--auto-split" ]; then
-  AUTO_SPLIT=true
-fi
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --auto-split)
+      AUTO_SPLIT=true
+      shift
+      ;;
+    [0-9]*)
+      LIMIT="$1"
+      shift
+      ;;
+    *)
+      log_error "Unknown argument: $1"
+      log_info "Usage: $0 [--auto-split] [limit]"
+      exit 1
+      ;;
+  esac
+done
 
 echo "📏 File Size Monitor - $(date '+%Y-%m-%d %H:%M')"
 echo "Workspace: $WORKSPACE"
@@ -56,12 +83,12 @@ done < <(find "$WORKSPACE" -type f \( -name "*.sh" -o -name "*.js" -o -name "*.m
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [ $VIOLATIONS -eq 0 ]; then
-  echo "✅ All files within $LIMIT line limit!"
+  log_success "All files within $LIMIT line limit!"
+  exit 0
 else
-  echo "📊 Summary:"
-  echo "   Files exceeding limit: $VIOLATIONS"
-  echo "   Total excess lines: $TOTAL_EXCESS"
-  echo "   Average overage: $((TOTAL_EXCESS / VIOLATIONS)) lines/file"
+  log_info "Summary:"
+  log_info "  Files exceeding limit: $VIOLATIONS"
+  log_info "  Total excess lines: $TOTAL_EXCESS"
+  log_info "  Average overage: $((TOTAL_EXCESS / VIOLATIONS)) lines/file"
+  exit $VIOLATIONS
 fi
-
-exit $VIOLATIONS

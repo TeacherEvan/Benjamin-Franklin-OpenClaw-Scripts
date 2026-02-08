@@ -1,6 +1,8 @@
 /**
  * Core Compressor
- * Applies dictionary and pattern transformations
+ * Applies dictionary and pattern transformations for memory compression
+ * 
+ * @module compressor
  */
 
 const DICT = require('./dictionary');
@@ -8,7 +10,9 @@ const PATTERNS = require('./patterns');
 
 class Compressor {
   /**
-   * Compress text using dictionary and patterns
+   * Compress text using dictionary and pattern transformations
+   * @param {string} text - Text to compress
+   * @returns {string} Compressed text
    */
   static compress(text) {
     let compressed = text;
@@ -47,6 +51,9 @@ class Compressor {
 
   /**
    * Decompress text (reverse transformations)
+   * Note: Pattern reversal is lossy - some context may be lost
+   * @param {string} text - Compressed text
+   * @returns {string} Decompressed text
    */
   static decompress(text) {
     let decompressed = text;

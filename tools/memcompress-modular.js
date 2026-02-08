@@ -3,6 +3,12 @@
 /**
  * MemCompress - Automated Memory Compression System
  * Refactored modular version
+ * 
+ * @module memcompress-modular
+ * @requires fs/promises
+ * @requires path
+ * @requires ./memcompress/compressor
+ * @requires ./memcompress/analyzer
  */
 
 const fs = require('fs').promises;
@@ -13,6 +19,11 @@ const { estimateTokens, compressionRatio } = require('./memcompress/analyzer');
 const WORKSPACE = process.env.OPENCLAW_WORKSPACE || '/home/ubuntu/.openclaw/clawd';
 const MEMORY_DIR = path.join(WORKSPACE, 'memory');
 
+/**
+ * Compress a single memory file
+ * @param {string} filePath - Path to file to compress
+ * @returns {Promise<Object|null>} Compression results or null if skipped
+ */
 async function compressFile(filePath) {
   try {
     const content = await fs.readFile(filePath, 'utf8');
@@ -45,6 +56,11 @@ async function compressFile(filePath) {
   }
 }
 
+/**
+ * Main execution function
+ * Finds and compresses all daily memory files
+ * @returns {Promise<void>}
+ */
 async function main() {
   try {
     // Find all daily memory files
