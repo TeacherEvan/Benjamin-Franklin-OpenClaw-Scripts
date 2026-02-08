@@ -90,5 +90,6 @@ else
   log_info "  Files exceeding limit: $VIOLATIONS"
   log_info "  Total excess lines: $TOTAL_EXCESS"
   log_info "  Average overage: $((TOTAL_EXCESS / VIOLATIONS)) lines/file"
-  exit $VIOLATIONS
+  # Exit with 1 to indicate violations found (avoid exceeding max exit code 255)
+  exit 1
 fi
