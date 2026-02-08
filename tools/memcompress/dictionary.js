@@ -1,6 +1,9 @@
 /**
  * Compression Dictionary
- * Maps verbose terms to compact equivalents
+ * Maps verbose terms to compact equivalents for memory compression
+ * 
+ * @module dictionary
+ * @type {Object.<string, string>}
  */
 
 module.exports = {
